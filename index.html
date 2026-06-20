@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Klinik Utama AMC — Skrining Jiwa</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+
+<style>
+* { font-family:'Plus Jakarta Sans',sans-serif; -webkit-tap-highlight-color:transparent; box-sizing:border-box; }
+html,body { margin:0; padding:0; background:#EEF2F5; }
+body { max-width:430px; margin:0 auto; min-height:100vh; }
+
+/* ─── HERO ─── */
+.hero {
+  background: #0D7C80;
+  padding: 0 16px 24px;
+}
+
+/* ─── CHIP STATS ─── sesuai referensi: rounded-2xl, semi-transparan */
+.stat-chip {
+  flex:1;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 16px;
+  padding: 12px 8px 10px;
+  text-align: center;
+}
+.stat-chip .val { font-size:17px; font-weight:800; color:#fff; line-height:1.2; }
+.stat-chip .key { font-size:10px; font-weight:600; color:rgba(255,255,255,0.65); margin-top:3px; letter-spacing:.03em; text-transform:uppercase; }
+
+/* ─── TIP CARD ─── overlapping hero */
+.tip-card {
+  background:#fff;
+  border-radius:18px;
+  box-shadow:0 4px 24px rgba(0,0,0,.09);
+  border-left:5px solid #0D7C80;
+  margin:-16px 16px 0;
+  padding:14px 16px;
+  position:relative; z-index:10;
+}
+
+/* ─── SECTION HEADER ─── */
+.section-head {
+  display:flex; align-items:center; gap:6px;
+  font-size:12px; font-weight:800;
+  color:#374151; letter-spacing:.06em; text-transform:uppercase;
+  margin:20px 16px 10px;
+}
+
+/* ─── STATUS CARDS SCROLL ─── */
+.status-scroll {
+  display:flex; gap:10px;
+  overflow-x:auto; padding:0 16px 4px;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.status-scroll::-webkit-scrollbar { display:none; }
+.status-card {
+  background:#fff;
+  border:1px solid #E5E7EB;
+  border-radius:16px;
+  padding:12px 14px;
+  flex-shrink:0; min-width:130px;
+}
+.status-card .sc-label { font-size:9px; font-weight:700; color:#9CA3AF; text-transform:uppercase; letter-spacing:.05em; }
+.status-card .sc-val   { font-size:20px; font-weight:800; color:#111827; margin:2px 0; }
+.status-card .sc-date  { font-size:11px; color:#9CA3AF; }
+
+/* ─── MENU GRID ─── kotak kecil 4 kolom persis referensi */
+.menu-grid {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  padding:0 16px;
+}
+.menu-box {
+  background:#fff;
+  border-radius:16px;
+  padding:14px 6px 11px;
+  text-align:center;
+  cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.05);
+  border:2px solid transparent;
+  transition:transform .15s ease, box-shadow .15s ease, border-color .15s;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+}
+.menu-box:hover  { transform:translateY(-3px); box-shadow:0 8px 18px rgba(0,0,0,.1); }
+.menu-box:active { transform:scale(.93); }
+.menu-box .ico {
+  width:48px; height:48px;
+  border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:26px; line-height:1;
+}
+.menu-box .lbl { font-size:11px; font-weight:700; color:#1F2937; line-height:1.25; }
+.menu-box .sub { font-size:9.5px; color:#9CA3AF; font-weight:600; }
+
+/* ─── BOTTOM NAV ─── */
+.bnav {
+  position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+  width:100%; max-width:430px;
+  background:#fff; border-top:1px solid #E5E7EB;
+  display:flex; z-index:100;
+  padding-bottom: env(safe-area-inset-bottom,0);
+}
+.bnav-item {
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:9px 4px 7px; cursor:pointer; gap:2px;
+  font-size:10px; font-weight:700; color:#9CA3AF; transition:color .15s;
+}
+.bnav-item svg { width:22px; height:22px; }
+.bnav-item.active { color:#0D7C80; }
+
+/* ─── MODAL ─── */
+#overlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.48);
+  backdrop-filter:blur(3px);
+  z-index:200; display:none; align-items:flex-end;
+}
+#overlay.open { display:flex; animation:fdIn .2s ease; }
+#sheet {
+  background:#fff;
+  width:100%; max-width:430px; margin:0 auto;
+  max-height:92vh; border-radius:24px 24px 0 0;
+  overflow-y:auto;
+  animation:slUp .28s cubic-bezier(.4,0,.2,1);
+}
+#sheet::-webkit-scrollbar { width:3px; }
+#sheet::-webkit-scrollbar-thumb { background:#D1D5DB; border-radius:2px; }
+
+@keyframes fdIn  { from{opacity:0}    to{opacity:1} }
+@keyframes slUp  { from{transform:translateY(50px);opacity:.5} to{transform:translateY(0);opacity:1} }
+
+/* ─── RADIO OPTIONS IN MODAL ─── */
+.opt input[type=radio]{ display:none; }
+.opt label {
+  display:flex; align-items:center; gap:11px;
+  padding:12px 14px; border:2px solid #E5E7EB;
+  border-radius:12px; cursor:pointer; background:#fff;
+  transition:all .13s; font-size:.86rem; color:#374151; font-weight:500;
+}
+.opt label:hover { border-color:#0D7C80; background:#F0FDFA; }
+.opt input[type=radio]:checked + label {
+  border-color:#0D7C80; background:#E6F6F6; color:#085255; font-weight:700;
+}
+.rdot {
+  width:18px; height:18px; border-radius:50%;
+  border:2px solid #D1D5DB; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; transition:all .13s;
+}
+.opt input[type=radio]:checked + label .rdot { border-color:#0D7C80; background:#0D7C80; }
+.rdot::after { content:''; width:6px; height:6px; border-radius:50%; background:#fff; display:none; }
+.opt input[type=radio]:checked + label .rdot::after { display:block; }
+
+/* Progress bar */
+#qprog-fill { transition:width .4s ease; }
+.sbar-fill   { transition:width .7s cubic-bezier(.4,0,.2,1); }
+
+.pb-nav { padding-bottom:72px; }
+
+@media print {
+  body { background:#fff; max-width:100%; }
+  .no-print, .bnav { display:none!important; }
+  #overlay { position:static; display:block; }
+  #sheet   { max-height:none; border-radius:0; animation:none; box-shadow:none; }
+  .print-kop { display:block!important; }
+}
+.print-kop { display:none; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     HALAMAN UTAMA
+══════════════════════════════════ -->
+<div class="pb-nav">
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <!-- Top bar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 0 16px">
+      <!-- Logo + Nama -->
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px">🌿</div>
+        <span style="font-size:18px;font-weight:800;color:#fff">Klinik Utama AMC</span>
+      </div>
+      <!-- Aksi kanan -->
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="rotateTip()" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">🌙</button>
+        <button onclick="shareApp()" style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:6px 12px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">
+          🔗 Bagikan
+        </button>
+      </div>
+    </div>
+
+    <!-- Kartu Dokter / Pasien -->
+    <div style="background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);border-radius:18px;padding:14px 14px 14px;display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <!-- Avatar -->
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.25);border:2px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">👨‍⚕️</div>
+      <!-- Info -->
+      <div style="flex:1;min-width:0">
+        <p style="font-size:16px;font-weight:800;color:#fff;margin:0;line-height:1.2">dr. Andi Fatimah, Sp.KJ</p>
+        <p style="font-size:11px;color:rgba(255,255,255,.7);margin:3px 0 0">Psikiater (Sp.KJ) • Klinik Utama AMC</p>
+        <p style="font-size:10px;color:rgba(255,255,255,.55);margin:1px 0 0">Spesialis Kesehatan Jiwa</p>
+      </div>
+      <!-- Tombol + Pasien -->
+      <button onclick="resetPasien()" style="flex-shrink:0;background:transparent;border:1.5px dashed rgba(255,255,255,.55);border-radius:10px;padding:6px 10px;color:rgba(255,255,255,.85);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">+ Pasien</button>
+    </div>
+
+    <!-- Chip stats (3 kolom) -->
+    <div style="display:flex;gap:10px">
+      <div class="stat-chip">
+        <div class="val" id="chip-nama">—</div>
+        <div class="key">Nama</div>
+      </div>
+      <div class="stat-chip">
+        <div class="val" id="chip-usia">—</div>
+        <div class="key">Usia</div>
+      </div>
+      <div class="stat-chip">
+        <div class="val" id="chip-count">0/6</div>
+        <div class="key">Selesai ✓</div>
+      </div>
+    </div>
+  </div><!-- /hero -->
+
+  <!-- ── TIP CARD (overlap hero) ── -->
+  <div class="tip-card" onclick="rotateTip()" style="cursor:pointer">
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <span style="font-size:22px;flex-shrink:0">💡</span>
+      <div>
+        <p id="tip-title" style="margin:0;font-size:13px;font-weight:800;color:#0D7C80"></p>
+        <p id="tip-body"  style="margin:4px 0 0;font-size:12px;color:#6B7280;line-height:1.55"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STATUS TERKINI ── -->
+  <div id="status-sec" style="display:none">
+    <div class="section-head">📊 Status Terkini</div>
+    <div class="status-scroll" id="status-cards"></div>
+  </div>
+
+  <!-- ── MENU UTAMA ── -->
+  <div class="section-head">🧩 Menu Utama</div>
+
+  <div class="menu-grid">
+
+    <!-- SRQ-20 -->
+    <div class="menu-box" onclick="openScreening('srq20')">
+      <div class="ico" style="background:#EFF6FF">🧠</div>
+      <div class="lbl">SRQ-20</div>
+      <div class="sub">Umum</div>
+    </div>
+
+    <!-- PHQ-9 -->
+    <div class="menu-box" onclick="openScreening('phq9')">
+      <div class="ico" style="background:#ECFEFF">🌧️</div>
+      <div class="lbl">PHQ-9</div>
+      <div class="sub">Depresi</div>
+    </div>
+
+    <!-- GAD-7 -->
+    <div class="menu-box" onclick="openScreening('gad7')">
+      <div class="ico" style="background:#F0FDFA">💭</div>
+      <div class="lbl">GAD-7</div>
+      <div class="sub">Cemas</div>
+    </div>
+
+    <!-- DASS-21 -->
+    <div class="menu-box" onclick="openScreening('dass21')">
+      <div class="ico" style="background:#F5F3FF">📊</div>
+      <div class="lbl">DASS-21</div>
+      <div class="sub">Stres</div>
+    </div>
+
+    <!-- ASRS -->
+    <div class="menu-box" onclick="openScreening('asrs')">
+      <div class="ico" style="background:#FFF7ED">⚡</div>
+      <div class="lbl">ASRS</div>
+      <div class="sub">ADHD</div>
+    </div>
+
+    <!-- MDQ -->
+    <div class="menu-box" onclick="openScreening('mdq')">
+      <div class="ico" style="background:#FFF1F2">🎭</div>
+      <div class="lbl">MDQ</div>
+      <div class="sub">Bipolar</div>
+    </div>
+
+    <!-- Riwayat -->
+    <div class="menu-box" onclick="toggleRiwayat()">
+      <div class="ico" style="background:#ECFDF5">📋</div>
+      <div class="lbl">Riwayat</div>
+      <div class="sub">Hasil</div>
+    </div>
+
+    <!-- Cetak -->
+    <div class="menu-box" onclick="printLast()">
+      <div class="ico" style="background:#F8FAFC">🖨️</div>
+      <div class="lbl">Cetak</div>
+      <div class="sub">Laporan</div>
+    </div>
+
+  </div><!-- /menu-grid -->
+
+  <!-- ── RIWAYAT SKRINING ── -->
+  <div id="riwayat-sec" style="display:none;margin-top:20px">
+    <div class="section-head" style="margin-top:0">
+      📋 Riwayat Skrining
+      <button onclick="clearRiwayat()" style="margin-left:auto;font-size:10px;color:#EF4444;font-weight:700;background:none;border:none;cursor:pointer;padding:0">Hapus Semua</button>
+    </div>
+    <div id="riwayat-list" style="padding:0 16px;display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+
+  <!-- Disclaimer -->
+  <div style="margin:20px 16px 8px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:16px;padding:12px 14px">
+    <p style="margin:0;font-size:11px;color:#92400E;text-align:center;line-height:1.5">
+      ⚠️ <strong>Penting:</strong> Semua skrining di sini hanya <strong>skrining awal</strong>, bukan diagnosis medis. Diagnosis pasti hanya oleh <strong>Psikiater (Sp.KJ)</strong>.
+    </p>
+  </div>
+  <p style="text-align:center;font-size:10.5px;color:#9CA3AF;margin:0 0 8px;padding:0 16px">Klinik Utama AMC · dr. Andi Fatimah, Sp.KJ</p>
+
+</div><!-- /pb-nav -->
+
+
+<!-- ══════════════════════════════════
+     BOTTOM NAV
+══════════════════════════════════ -->
+<nav class="bnav no-print">
+  <div class="bnav-item active" id="nav-beranda" onclick="navClick('beranda',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
+    Beranda
+  </div>
+  <div class="bnav-item" id="nav-edukasi" onclick="navClick('edukasi',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+    Edukasi
+  </div>
+  <div class="bnav-item" id="nav-toko" onclick="navClick('toko',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
+    Toko
+  </div>
+  <div class="bnav-item" id="nav-support" onclick="navClick('support',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5.25 0a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/></svg>
+    Support
+  </div>
+  <div class="bnav-item" id="nav-profil" onclick="navClick('profil',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0"/></svg>
+    Profil
+  </div>
+</nav>
+
+
+<!-- ══════════════════════════════════
+     MODAL SHEET
+══════════════════════════════════ -->
+<div id="overlay" onclick="overlayClick(event)">
+<div id="sheet">
+
+  <!-- Handle -->
+  <div style="display:flex;justify-content:center;padding:12px 0 4px" class="no-print">
+    <div style="width:36px;height:4px;border-radius:2px;background:#E5E7EB"></div>
+  </div>
+
+  <!-- ─── STEP CONSENT ─── -->
+  <div id="step-consent" style="padding:0 16px 24px">
+
+    <!-- Header tool -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="c-icon" style="width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px"></div>
+        <div>
+          <p id="c-cat"  style="margin:0;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6B7280"></p>
+          <p id="c-name" style="margin:2px 0 0;font-size:20px;font-weight:800;color:#111827"></p>
+          <p id="c-meta" style="margin:1px 0 0;font-size:11px;color:#9CA3AF"></p>
+        </div>
+      </div>
+      <button onclick="closeModal()" style="width:32px;height:32px;border-radius:50%;background:#F3F4F6;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">
+        <svg width="14" height="14" fill="none" stroke="#6B7280" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- Disclaimer -->
+    <div style="background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:14px;padding:12px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start">
+      <span style="font-size:18px;flex-shrink:0">⚠️</span>
+      <p style="margin:0;font-size:11.5px;color:#92400E;line-height:1.55"><strong>Ingat:</strong> Hasil ini hanya skrining awal, bukan diagnosis. Diagnosis pasti hanya oleh <strong>Psikiater (Sp.KJ)</strong>.</p>
+    </div>
+
+    <!-- Form data diri -->
+    <div style="background:#F9FAFB;border-radius:16px;padding:14px;margin-bottom:14px">
+      <p style="margin:0 0 10px;font-size:10px;font-weight:800;color:#6B7280;text-transform:uppercase;letter-spacing:.07em">Data Pasien</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px">Nama Inisial</label>
+          <input id="m-nama" type="text" maxlength="8" placeholder="Cth: AN"
+            style="width:100%;padding:10px 12px;border-radius:12px;border:2px solid #E5E7EB;background:#fff;font-size:13px;font-weight:700;color:#111827;outline:none;transition:border-color .15s"
+            onfocus="this.style.borderColor='#0D7C80'" onblur="this.style.borderColor='#E5E7EB'"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px">Usia (tahun)</label>
+          <input id="m-usia" type="number" min="10" max="100" placeholder="Tahun"
+            style="width:100%;padding:10px 12px;border-radius:12px;border:2px solid #E5E7EB;background:#fff;font-size:13px;font-weight:700;color:#111827;outline:none;transition:border-color .15s"
+            onfocus="this.style.borderColor='#0D7C80'" onblur="this.style.borderColor='#E5E7EB'"/>
+        </div>
+      </div>
+      <!-- JK -->
+      <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:6px">Jenis Kelamin</label>
+      <div style="display:flex;gap:8px">
+        <label style="flex:1;display:flex;align-items:center;gap:7px;border:2px solid #E5E7EB;border-radius:12px;padding:9px 12px;cursor:pointer;background:#fff;transition:all .13s" id="lbl-lk">
+          <input type="radio" name="m-jk" value="Laki-laki" style="accent-color:#0D7C80;width:14px;height:14px" onchange="styleJK()"/>
+          <span style="font-size:12px;font-weight:600;color:#374151">♂ Laki-laki</span>
+        </label>
+        <label style="flex:1;display:flex;align-items:center;gap:7px;border:2px solid #E5E7EB;border-radius:12px;padding:9px 12px;cursor:pointer;background:#fff;transition:all .13s" id="lbl-pr">
+          <input type="radio" name="m-jk" value="Perempuan" style="accent-color:#0D7C80;width:14px;height:14px" onchange="styleJK()"/>
+          <span style="font-size:12px;font-weight:600;color:#374151">♀ Perempuan</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Consent checkbox -->
+    <label for="m-consent" style="display:flex;align-items:flex-start;gap:12px;background:#fff;border:2px solid #E5E7EB;border-radius:16px;padding:14px;margin-bottom:14px;cursor:pointer" id="consent-lbl">
+      <div style="flex-shrink:0;margin-top:1px">
+        <input type="checkbox" id="m-consent" style="display:none" onchange="toggleStart()"/>
+        <div id="cb-box" style="width:20px;height:20px;border-radius:6px;border:2px solid #D1D5DB;background:#fff;display:flex;align-items:center;justify-content:center;transition:all .15s">
+          <svg id="cb-check" width="11" height="11" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24" style="display:none"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        </div>
+      </div>
+      <p style="margin:0;font-size:11.5px;color:#4B5563;line-height:1.55">Saya memahami bahwa hasil ini bersifat skrining awal dan menyetujui penggunaannya sebagai data penunjang rujukan medis di Klinik Utama AMC.</p>
+    </label>
+
+    <button id="btn-start" disabled onclick="goToQ()"
+      style="width:100%;padding:15px;border-radius:18px;font-size:14px;font-weight:800;color:#fff;border:none;cursor:pointer;
+             background:linear-gradient(135deg,#0D7C80,#14919B);
+             box-shadow:0 6px 20px rgba(13,124,128,.35);
+             transition:all .15s;opacity:.45" >
+      Mulai Kuesioner →
+    </button>
+  </div><!-- /step-consent -->
+
+  <!-- ─── STEP KUESIONER ─── -->
+  <div id="step-q" style="display:none">
+
+    <!-- Progress sticky -->
+    <div style="position:sticky;top:16px;background:#fff;z-index:10;padding:10px 16px 12px;border-bottom:1px solid #F3F4F6">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span id="q-lbl" style="font-size:11px;font-weight:600;color:#6B7280"></span>
+        <span id="q-pct" style="font-size:11px;font-weight:800;color:#0D7C80"></span>
+      </div>
+      <div style="width:100%;height:8px;background:#F3F4F6;border-radius:4px;overflow:hidden">
+        <div id="qprog-fill" style="height:100%;background:linear-gradient(90deg,#0D7C80,#14919B);border-radius:4px;width:0%"></div>
+      </div>
+    </div>
+
+    <div style="padding:14px 16px 8px">
+      <div id="q-instr" style="background:#EFF6FF;border:1px solid #DBEAFE;border-radius:12px;padding:11px 14px;font-size:11.5px;color:#1E40AF;line-height:1.55;margin-bottom:14px"></div>
+      <div id="q-items" style="display:flex;flex-direction:column;gap:14px"></div>
+      <p id="q-err" style="display:none;font-size:11px;font-weight:600;color:#DC2626;text-align:center;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:10px;padding:8px;margin-top:10px">
+        Harap jawab semua pertanyaan terlebih dahulu.
+      </p>
+    </div>
+
+    <div style="display:flex;gap:10px;padding:12px 16px 20px">
+      <button onclick="backConsent()" style="flex:1;padding:14px;border-radius:16px;font-size:13px;font-weight:700;color:#4B5563;background:#fff;border:2px solid #E5E7EB;cursor:pointer">← Kembali</button>
+      <button onclick="submitQ()"     style="flex:2;padding:14px;border-radius:16px;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(135deg,#0D7C80,#14919B);border:none;cursor:pointer;box-shadow:0 4px 14px rgba(13,124,128,.3)">Lihat Hasil →</button>
+    </div>
+  </div><!-- /step-q -->
+
+  <!-- ─── STEP HASIL ─── -->
+  <div id="step-result" style="display:none">
+
+    <!-- Print kop -->
+    <div class="print-kop" style="border-bottom:2.5px solid #0D7C80;padding:16px 16px 12px;margin-bottom:12px">
+      <p style="margin:0;font-size:20px;font-weight:800;color:#0D7C80">Klinik Utama AMC</p>
+      <p style="margin:2px 0 0;font-size:13px;color:#374151">dr. Andi Fatimah, Sp.KJ</p>
+      <p style="margin:4px 0 0;font-size:11px;color:#9CA3AF">Tanggal: <span id="r-date"></span></p>
+      <p style="margin:4px 0 0;font-size:11px;color:#D97706;font-weight:600">⚠️ Hanya skrining awal, BUKAN diagnosis medis final.</p>
+    </div>
+
+    <div style="padding:16px 16px 24px">
+
+      <!-- Tool header -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div id="r-icon" style="width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px"></div>
+        <div>
+          <p id="r-name" style="margin:0;font-size:19px;font-weight:800;color:#111827"></p>
+          <p style="margin:1px 0 0;font-size:11px;color:#9CA3AF">Klinik Utama AMC — Hasil Skrining</p>
+        </div>
+      </div>
+
+      <!-- Identitas chips -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;text-align:center">
+        <div style="background:#F9FAFB;border-radius:12px;padding:10px 6px">
+          <p style="margin:0;font-size:10px;color:#9CA3AF">Nama</p>
+          <p id="r-nama" style="margin:2px 0 0;font-size:12px;font-weight:700;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</p>
+        </div>
+        <div style="background:#F9FAFB;border-radius:12px;padding:10px 6px">
+          <p style="margin:0;font-size:10px;color:#9CA3AF">Usia</p>
+          <p id="r-usia" style="margin:2px 0 0;font-size:12px;font-weight:700;color:#111827">—</p>
+        </div>
+        <div style="background:#F9FAFB;border-radius:12px;padding:10px 6px">
+          <p style="margin:0;font-size:10px;color:#9CA3AF">Kelamin</p>
+          <p id="r-jk"  style="margin:2px 0 0;font-size:12px;font-weight:700;color:#111827">—</p>
+        </div>
+      </div>
+
+      <!-- Score cards -->
+      <div id="r-cards" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px"></div>
+
+      <!-- Red flag -->
+      <div id="r-rf" style="display:none;background:#FEF2F2;border:2px solid #FCA5A5;border-radius:16px;padding:14px;margin-bottom:12px">
+        <p style="margin:0 0 4px;font-size:13px;font-weight:800;color:#DC2626">🚨 Peringatan Krisis</p>
+        <p style="margin:0;font-size:11.5px;color:#B91C1C;line-height:1.5">Terdeteksi indikasi pikiran untuk menyakiti diri sendiri. Segera hubungi dokter atau IGD. Hotline: <strong>119 ext. 8</strong></p>
+        <a href="tel:119" style="display:flex;align-items:center;justify-content:center;margin-top:10px;background:#DC2626;color:#fff;border-radius:12px;padding:10px;font-size:13px;font-weight:700;text-decoration:none">📞 Hubungi 119 Sekarang</a>
+      </div>
+
+      <!-- Anjuran -->
+      <div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:14px;padding:13px 14px;margin-bottom:12px">
+        <p style="margin:0 0 5px;font-size:11px;font-weight:800;color:#065F46;text-transform:uppercase;letter-spacing:.05em">📋 Anjuran Tindak Lanjut</p>
+        <p id="r-anjuran" style="margin:0;font-size:12px;color:#064E3B;line-height:1.55"></p>
+      </div>
+
+      <!-- Disclaimer kecil -->
+      <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:10px 12px;margin-bottom:16px;text-align:center">
+        <p style="margin:0;font-size:11px;color:#92400E;line-height:1.4">⚠️ Diagnosis final hanya oleh <strong>Psikiater (Sp.KJ)</strong> atau Psikolog Klinis.</p>
+      </div>
+
+      <!-- Tombol aksi -->
+      <div style="display:flex;flex-direction:column;gap:8px" class="no-print">
+        <button onclick="doPrint()" style="width:100%;padding:14px;border-radius:16px;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(135deg,#0D7C80,#14919B);border:none;cursor:pointer;box-shadow:0 4px 14px rgba(13,124,128,.3);display:flex;align-items:center;justify-content:center;gap:6px">
+          🖨️ Cetak Hasil
+        </button>
+        <button onclick="closeModal()" style="width:100%;padding:12px;border-radius:16px;font-size:13px;font-weight:700;color:#4B5563;background:#fff;border:2px solid #E5E7EB;cursor:pointer">Tutup</button>
+        <button onclick="closeModal()" style="width:100%;padding:12px;border-radius:16px;font-size:13px;font-weight:700;color:#0D7C80;background:transparent;border:none;cursor:pointer">↺ Skrining Lain</button>
+      </div>
+
+    </div>
+  </div><!-- /step-result -->
+
+</div><!-- /sheet -->
+</div><!-- /overlay -->
+
+
+<!-- ══════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════ -->
+<script>
+// ── DATA SKRINING ──
+const S = {
+  srq20:{name:'SRQ-20',cat:'Psikiatri Umum',icon:'🧠',ibg:'#EFF6FF',instr:'Jawab <strong>YA</strong> atau <strong>TIDAK</strong> berdasarkan kondisi Anda dalam <strong>30 hari terakhir</strong>.',opts:[{l:'Tidak',v:0},{l:'Ya',v:1}],items:['Apakah Anda sering menderita sakit kepala?','Apakah Anda kehilangan nafsu makan?','Apakah tidur Anda tidak nyenyak?','Apakah Anda mudah merasa takut?','Apakah tangan Anda gemetar?','Apakah Anda merasa tegang, cemas, atau khawatir?','Apakah pencernaan Anda buruk?','Apakah Anda sulit berpikir jernih?','Apakah Anda merasa tidak bahagia?','Apakah Anda menangis lebih sering dari biasanya?','Apakah Anda sulit menikmati aktivitas sehari-hari?','Apakah Anda sulit mengambil keputusan?','Apakah pekerjaan sehari-hari Anda terganggu?','Apakah Anda tidak mampu melakukan hal-hal bermanfaat?','Apakah Anda kehilangan minat pada berbagai hal?','Apakah Anda merasa tidak berharga?','Apakah Anda punya pikiran untuk mengakhiri hidup?','Apakah Anda merasa lelah sepanjang waktu?','Apakah Anda punya perasaan tidak enak di perut?','Apakah Anda mudah lelah?'],rf:[16],score(a){const t=a.reduce((s,v)=>s+v,0);let l,c,r;if(t<=5){l='Normal';c='g';r='Tidak ditemukan tanda masalah kesehatan jiwa signifikan. Pertahankan gaya hidup sehat.'}else if(t<=10){l='Ringan';c='y';r='Ada beberapa gejala. Konsultasikan dengan dokter di Klinik Utama AMC.'}else if(t<=15){l='Sedang';c='o';r='Gejala cukup signifikan. Segera konsultasikan untuk rujukan ke Sp.KJ.'}else{l='Berat';c='r';r='Gejala berat. Segera hubungi dr. Andi Fatimah untuk rujukan Psikiater.'}return[{lbl:'Total SRQ-20',sc:t,mx:20,lv:l,cl:c,an:r}];}},
+  phq9:{name:'PHQ-9',cat:'Depresi',icon:'🌧️',ibg:'#ECFEFF',instr:'Selama <strong>2 minggu terakhir</strong>, seberapa sering Anda terganggu oleh masalah-masalah berikut?',opts:[{l:'Tidak pernah',v:0},{l:'Beberapa hari',v:1},{l:'Lebih dari setengah waktu',v:2},{l:'Hampir setiap hari',v:3}],items:['Sedikit minat atau kesenangan dalam melakukan sesuatu','Merasa murung, tertekan, atau putus asa','Sulit tidur atau terlalu banyak tidur','Merasa lelah atau memiliki sedikit energi','Kurang nafsu makan atau makan berlebihan','Merasa buruk tentang diri sendiri — atau merasa gagal/mengecewakan diri sendiri atau keluarga','Sulit berkonsentrasi, seperti membaca atau menonton TV','Bergerak/berbicara sangat lambat, atau sebaliknya sangat gelisah dan tidak bisa diam','Pikiran bahwa Anda lebih baik mati, atau pikiran untuk menyakiti diri sendiri'],rf:[8],score(a){const t=a.reduce((s,v)=>s+v,0);let l,c,r;if(t<=4){l='Minimal';c='g';r='Tidak ada tanda depresi signifikan. Pertahankan pola hidup sehat.'}else if(t<=9){l='Ringan';c='y';r='Gejala depresi ringan. Perhatikan pola tidur & aktivitas fisik.'}else if(t<=14){l='Sedang';c='o';r='Gejala depresi sedang. Sangat disarankan konsultasi untuk kemungkinan rujukan ke Sp.KJ.'}else if(t<=19){l='Cukup Berat';c='r';r='Segera konsultasikan ke dr. Andi Fatimah untuk rujukan Psikiater.'}else{l='Berat';c='r';r='Gejala berat. Penanganan segera oleh Sp.KJ diperlukan.'}return[{lbl:'Total PHQ-9',sc:t,mx:27,lv:l,cl:c,an:r}];}},
+  gad7:{name:'GAD-7',cat:'Kecemasan',icon:'💭',ibg:'#F0FDFA',instr:'Selama <strong>2 minggu terakhir</strong>, seberapa sering Anda terganggu oleh hal-hal berikut?',opts:[{l:'Tidak pernah',v:0},{l:'Beberapa hari',v:1},{l:'Lebih dari setengah waktu',v:2},{l:'Hampir setiap hari',v:3}],items:['Merasa gugup, cemas, atau gelisah','Tidak mampu menghentikan atau mengendalikan rasa khawatir','Terlalu banyak khawatir tentang berbagai hal','Sulit untuk rileks','Sangat gelisah sehingga sulit duduk diam','Menjadi mudah kesal atau marah','Merasa takut seolah sesuatu yang buruk akan terjadi'],rf:[],score(a){const t=a.reduce((s,v)=>s+v,0);let l,c,r;if(t<=4){l='Minimal';c='g';r='Tidak ada tanda kecemasan signifikan. Relaksasi & olahraga rutin dianjurkan.'}else if(t<=9){l='Ringan';c='y';r='Kecemasan ringan. Teknik mindfulness & manajemen stres dianjurkan.'}else if(t<=14){l='Sedang';c='o';r='Kecemasan sedang. Sangat disarankan konsultasi untuk evaluasi lebih lanjut.'}else{l='Berat';c='r';r='Kecemasan berat. Segera konsultasikan dengan Sp.KJ.'}return[{lbl:'Total GAD-7',sc:t,mx:21,lv:l,cl:c,an:r}];}},
+  dass21:{name:'DASS-21',cat:'Stres · Depresi · Kecemasan',icon:'📊',ibg:'#F5F3FF',instr:'Pilih seberapa sering pernyataan ini menggambarkan diri Anda <strong>selama seminggu terakhir</strong>.',opts:[{l:'Tidak pernah sama sekali',v:0},{l:'Kadang-kadang',v:1},{l:'Cukup sering',v:2},{l:'Sangat sering/selalu',v:3}],items:['Saya merasa sulit untuk rileks','Saya menyadari mulut saya terasa kering','Saya tidak bisa merasakan perasaan positif sama sekali','Saya mengalami kesulitan bernapas (napas cepat, sesak)','Saya merasa sulit untuk berinisiatif melakukan sesuatu','Saya cenderung bereaksi berlebihan terhadap situasi','Saya merasa gemetar (misalnya di tangan)','Saya merasa banyak menguras energi mental','Saya khawatir dengan situasi yang membuat saya panik atau mempermalukan','Saya merasa tidak ada yang bisa saya nantikan','Saya merasa gelisah','Saya merasa sulit untuk tenang','Saya merasa sedih dan murung','Saya tidak toleran terhadap hal-hal yang menghambat saya','Saya merasa hampir panik','Saya tidak bisa bersemangat untuk hal apapun','Saya merasa tidak berharga sebagai seseorang','Saya mudah tersinggung','Saya menyadari detak jantung saya meski tidak aktivitas berat','Saya merasa ketakutan tanpa alasan yang jelas','Saya merasa hidup tidak ada artinya'],rf:[20],score(a){const dI=[2,4,9,12,15,16,20],aI=[1,3,6,8,14,18,19],sI=[0,5,7,10,11,13,17];const D=dI.reduce((s,i)=>s+a[i]*2,0),A=aI.reduce((s,i)=>s+a[i]*2,0),Sv=sI.reduce((s,i)=>s+a[i]*2,0);const lv=(v,th,lb)=>{for(let i=0;i<th.length;i++)if(v<=th[i])return lb[i];return lb[lb.length-1];};const dl=lv(D,[9,13,20,27],['Normal','Ringan','Sedang','Parah','Sangat Parah']),al=lv(A,[7,9,14,19],['Normal','Ringan','Sedang','Parah','Sangat Parah']),sl=lv(Sv,[14,18,25,33],['Normal','Ringan','Sedang','Parah','Sangat Parah']);const col=v=>v==='Normal'?'g':v==='Ringan'?'y':v==='Sedang'?'o':'r';const worst=Math.max(D,A,Sv);const r=worst>=26?'Gejala sangat parah. Segera Sp.KJ.':worst>=21?'Gejala parah. Sangat disarankan rujukan ke Sp.KJ.':worst>=15?'Gejala sedang. Konsultasi dr. Andi Fatimah.':worst>=8?'Gejala ringan. Kelola stres & jaga pola tidur.':'Tidak ada tanda signifikan. Pertahankan gaya hidup sehat.';return[{lbl:'Depresi (D)',sc:D,mx:42,lv:dl,cl:col(dl),an:r},{lbl:'Kecemasan (A)',sc:A,mx:42,lv:al,cl:col(al),an:''},{lbl:'Stres (S)',sc:Sv,mx:42,lv:sl,cl:col(sl),an:''}];}},
+  asrs:{name:'ASRS v1.1',cat:'ADHD Dewasa',icon:'⚡',ibg:'#FFF7ED',instr:'Pilih seberapa sering hal berikut menggambarkan Anda dalam <strong>6 bulan terakhir</strong>.',opts:[{l:'Tidak pernah',v:0},{l:'Jarang',v:1},{l:'Kadang-kadang',v:2},{l:'Sering',v:3},{l:'Sangat sering',v:4}],items:['Seberapa sering Anda kesulitan menyelesaikan bagian akhir proyek?','Seberapa sering Anda kesulitan mengatur hal-hal dalam pekerjaan yang membutuhkan organisasi?','Seberapa sering Anda lupa janji atau kewajiban?','Seberapa sering Anda menghindari/menunda tugas yang memerlukan banyak pemikiran?','Seberapa sering Anda gelisah atau meremas tangan saat harus duduk lama?','Seberapa sering Anda merasa terlalu aktif, seolah digerakkan oleh mesin?','Seberapa sering Anda membuat kesalahan ceroboh pada proyek yang membosankan?','Seberapa sering Anda kesulitan fokus pada pekerjaan berulang?','Seberapa sering Anda kesulitan konsentrasi saat orang berbicara langsung kepada Anda?','Seberapa sering Anda salah menaruh atau kesulitan menemukan benda?','Seberapa sering Anda terganggu oleh aktivitas/kebisingan di sekitar?','Seberapa sering Anda pergi ke suatu tempat lalu lupa mengapa?','Seberapa sering Anda merasa gelisah atau terburu-buru?','Seberapa sering Anda kesulitan merilekskan diri di waktu luang?','Seberapa sering Anda terlalu banyak bicara dalam situasi sosial?','Seberapa sering Anda menyelesaikan kalimat orang lain sebelum mereka selesai?','Seberapa sering Anda kesulitan menunggu giliran?','Seberapa sering Anda menyela orang yang sedang sibuk?'],rf:[],score(a){const pos=a.slice(0,6).filter(v=>v>=2).length,t=a.reduce((s,v)=>s+v,0);let l,c,r;if(pos>=4){l='Indikasi ADHD';c='r';r='Skor mengindikasikan kemungkinan ADHD. Sangat disarankan konsultasi Sp.KJ untuk evaluasi formal.';}else if(pos>=2){l='Perlu Evaluasi';c='o';r='Beberapa gejala ADHD terdeteksi. Disarankan konsultasi dokter.';}else{l='Di Bawah Ambang';c='g';r='Tidak cukup mengindikasikan ADHD. Konsultasikan jika masih khawatir.';}return[{lbl:'ASRS Part A',sc:pos,mx:6,lv:l,cl:c,sub:`Total: ${t}/72`,an:r}];}},
+  mdq:{name:'MDQ',cat:'Mood Disorder Questionnaire',icon:'🎭',ibg:'#FFF1F2',instr:'Apakah Anda <strong>pernah mengalami</strong> periode waktu di mana Anda tidak seperti biasanya dan...',opts:[{l:'Tidak',v:0},{l:'Ya',v:1}],items:['Anda merasa sangat baik, bersemangat, atau "high" sehingga orang lain menganggap Anda tidak seperti biasanya?','Anda sangat mudah tersinggung, berteriak pada orang, atau memulai pertengkaran?','Anda merasa jauh lebih percaya diri dari biasanya?','Anda tidur jauh lebih sedikit dan tidak merasa butuh tidur?','Anda lebih banyak bicara atau bicara lebih cepat dari biasanya?','Pikiran berlari-lari di kepala atau Anda tidak bisa memperlambat pikiran?','Anda mudah terganggu dan sulit berkonsentrasi atau tetap pada jalur?','Anda memiliki lebih banyak energi dibanding biasanya?','Anda lebih aktif atau melakukan lebih banyak hal dari biasanya?','Anda lebih bersosialisasi atau ramah dari biasanya?','Anda lebih tertarik pada seks dari biasanya?','Anda melakukan hal berbahaya yang tidak biasa Anda lakukan?','Pengeluaran Anda membuat Anda atau keluarga bermasalah?'],extra:[{t:'Apakah beberapa masalah di atas pernah terjadi pada saat yang bersamaan?',o:[{l:'Tidak',v:0},{l:'Ya',v:1}]},{t:'Seberapa besar masalah-masalah tersebut menimbulkan gangguan?',o:[{l:'Tidak ada',v:0},{l:'Gangguan kecil',v:1},{l:'Gangguan sedang',v:2},{l:'Gangguan berat',v:3}]}],rf:[],score(a){const pos=a.slice(0,13).reduce((s,v)=>s+v,0),sim=a[13]??0,imp=a[14]??0,ok=pos>=7&&sim===1&&imp>=2;let l,c,r;if(ok){l='Positif Bipolar';c='r';r='Hasil mengindikasikan kemungkinan Gangguan Bipolar. Segera konsultasikan dengan Sp.KJ.';}else if(pos>=7){l='Perlu Evaluasi';c='o';r='Beberapa gejala mood terdeteksi. Disarankan konsultasi dokter.';}else{l='Di Bawah Ambang';c='g';r='Tidak mengindikasikan Gangguan Bipolar.';}return[{lbl:'MDQ — Gejala Positif',sc:pos,mx:13,lv:l,cl:c,sub:`Bersamaan: ${sim?'Ya':'Tidak'} | Gangguan: ${['Tidak ada','Kecil','Sedang','Berat'][imp]||'–'}`,an:r}];}}
+};
+
+// ── COLOR MAP ──
+const CM = {
+  g:{bg:'#D1FAE5',tx:'#065F46',br:'#34D399'},
+  y:{bg:'#FEF9C3',tx:'#713F12',br:'#FBBF24'},
+  o:{bg:'#FFEDD5',tx:'#9A3412',br:'#FB923C'},
+  r:{bg:'#FEE2E2',tx:'#991B1B',br:'#F87171'}
+};
+
+// ── STATE ──
+let AK=null, ANS=[], RIW=JSON.parse(localStorage.getItem('sal_riw')||'[]'), CNT=+localStorage.getItem('sal_cnt')||0, LAST=null;
+
+// ── INIT ──
+const TIPS=[
+  {t:'Apa itu skrining kesehatan jiwa?',b:'Skrining adalah pemeriksaan awal untuk mendeteksi kemungkinan masalah kesehatan jiwa — bukan menegakkan diagnosis. Hasilnya membantu dokter menentukan tindak lanjut.'},
+  {t:'PHQ-9 & GAD-7 — Apa bedanya?',b:'PHQ-9 mengukur gejala depresi selama 2 minggu terakhir. GAD-7 mengukur tingkat kecemasan umum. Keduanya direkomendasikan WHO sebagai alat skrining primer.'},
+  {t:'Kapan harus ke Psikiater?',b:'Jika gejala berlangsung >2 minggu, mengganggu aktivitas, atau skor menunjukkan sedang-berat, segera konsultasikan dengan dokter untuk rujukan Sp.KJ.'},
+  {t:'Kesehatan jiwa itu penting!',b:'1 dari 5 orang mengalami masalah kesehatan mental. Deteksi lebih awal meningkatkan peluang pulih secara signifikan. Jangan ragu meminta bantuan.'},
+  {t:'Tentang DASS-21',b:'DASS-21 mengukur 3 aksis sekaligus: Depresi, Kecemasan, dan Stres. Sangat berguna untuk mendapatkan gambaran menyeluruh kondisi emosional.'},
+];
+let TI=0;
+function rotateTip(){const t=TIPS[TI%TIPS.length];document.getElementById('tip-title').textContent=t.t;document.getElementById('tip-body').textContent=t.b;TI++;}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  rotateTip(); updateChips(); renderRiwayat();
+});
+
+function updateChips(){
+  const nm=localStorage.getItem('sal_nm')||'—',us=localStorage.getItem('sal_us')||'—';
+  document.getElementById('chip-nama').textContent=nm;
+  document.getElementById('chip-usia').textContent=us==='—'?'—':us+'th';
+  document.getElementById('chip-count').textContent=CNT+'/6';
+  if(nm!=='—'){document.getElementById('status-sec').style.display='';renderStatusCards();}
+}
+
+function renderStatusCards(){
+  const el=document.getElementById('status-cards');
+  if(!RIW.length){el.innerHTML='<p style="font-size:12px;color:#9CA3AF;align-self:center">Belum ada skrining selesai</p>';return;}
+  el.innerHTML=RIW.slice(-6).map(r=>`
+    <div class="status-card">
+      <div class="sc-label">${r.cat||r.name}</div>
+      <div class="sc-val">${r.icon}</div>
+      <div style="font-size:12px;font-weight:700;color:${CM[r.cl]?.tx||'#065F46'}">${r.lv}</div>
+      <div class="sc-date">${r.date}</div>
+    </div>`).join('');
+}
+
+// ── MODAL ──
+function openScreening(key){
+  AK=key; ANS=[];
+  const sc=S[key];
+  document.getElementById('c-icon').textContent=sc.icon;
+  document.getElementById('c-icon').style.background=sc.ibg;
+  document.getElementById('c-cat').textContent=sc.cat;
+  document.getElementById('c-name').textContent=sc.name;
+  const tot=sc.items.length+(sc.extra?.length||0);
+  document.getElementById('c-meta').textContent=`${tot} pertanyaan · ~${Math.ceil(tot/4)} menit`;
+  // Pre-fill
+  document.getElementById('m-nama').value=localStorage.getItem('sal_nm')||'';
+  document.getElementById('m-usia').value=localStorage.getItem('sal_us')||'';
+  document.querySelectorAll('input[name="m-jk"]').forEach(r=>r.checked=false);
+  const jk=localStorage.getItem('sal_jk');
+  if(jk){const r=document.querySelector(`input[name="m-jk"][value="${jk}"]`);if(r)r.checked=true;}
+  styleJK();
+  document.getElementById('m-consent').checked=false;
+  cbStyle(false);
+  document.getElementById('btn-start').disabled=true;
+  document.getElementById('btn-start').style.opacity='.45';
+  showStep('consent');
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeModal(){document.getElementById('overlay').classList.remove('open');document.body.style.overflow='';}
+function overlayClick(e){if(e.target===document.getElementById('overlay'))closeModal();}
+function showStep(n){['consent','q','result'].forEach(s=>document.getElementById('step-'+s).style.display=s===n?'':'none');document.getElementById('sheet').scrollTop=0;}
+
+function styleJK(){
+  const lk=document.querySelector('input[name="m-jk"][value="Laki-laki"]')?.checked;
+  const pr=document.querySelector('input[name="m-jk"][value="Perempuan"]')?.checked;
+  document.getElementById('lbl-lk').style.borderColor=lk?'#0D7C80':'#E5E7EB';
+  document.getElementById('lbl-lk').style.background=lk?'#E6F6F6':'#fff';
+  document.getElementById('lbl-pr').style.borderColor=pr?'#0D7C80':'#E5E7EB';
+  document.getElementById('lbl-pr').style.background=pr?'#E6F6F6':'#fff';
+}
+function cbStyle(on){
+  document.getElementById('cb-box').style.background=on?'#0D7C80':'#fff';
+  document.getElementById('cb-box').style.borderColor=on?'#0D7C80':'#D1D5DB';
+  document.getElementById('cb-check').style.display=on?'block':'none';
+}
+function toggleStart(){
+  const on=document.getElementById('m-consent').checked;
+  cbStyle(on);
+  document.getElementById('btn-start').disabled=!on;
+  document.getElementById('btn-start').style.opacity=on?'1':'.45';
+}
+
+function goToQ(){
+  const nm=document.getElementById('m-nama').value.trim()||'—';
+  const us=document.getElementById('m-usia').value.trim()||'—';
+  const jk=document.querySelector('input[name="m-jk"]:checked')?.value||'—';
+  localStorage.setItem('sal_nm',nm); localStorage.setItem('sal_us',us); localStorage.setItem('sal_jk',jk);
+  updateChips();
+  const sc=S[AK]; const tot=sc.items.length+(sc.extra?.length||0);
+  ANS=Array(tot).fill(null);
+  document.getElementById('q-instr').innerHTML=sc.instr;
+  const cont=document.getElementById('q-items'); cont.innerHTML='';
+  sc.items.forEach((q,i)=>cont.appendChild(mkCard(q,i,sc.opts,sc.rf.includes(i),tot)));
+  sc.extra?.forEach((e,i)=>cont.appendChild(mkCard(e.t,sc.items.length+i,e.o,false,tot,true)));
+  updProg(0,tot); showStep('q');
+}
+
+function mkCard(txt,idx,opts,isRF,tot,isEx=false){
+  const d=document.createElement('div');
+  d.style.cssText=`background:#fff;border-radius:16px;border:2px solid ${isRF?'#FED7AA':'#F3F4F6'};padding:14px`;
+  const rfBadge=isRF?`<span style="font-size:10px;background:#FFF7ED;color:#C2410C;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px">⚠ Penting</span>`:'';
+  const exBadge=isEx?`<span style="font-size:10px;background:#F5F3FF;color:#6D28D9;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px">Tambahan</span>`:'';
+  d.innerHTML=`
+    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px">
+      <span style="min-width:22px;height:22px;border-radius:50%;background:#E0F2F2;color:#0D7C80;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${idx+1}</span>
+      <p style="margin:0;font-size:13px;font-weight:600;color:#1F2937;line-height:1.5">${txt}${rfBadge}${exBadge}</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      ${opts.map(o=>`
+        <div class="opt">
+          <input type="radio" id="q-${AK}-${idx}-${o.v}" name="q-${AK}-${idx}" value="${o.v}" onchange="recAns(${idx},${o.v},${tot})"/>
+          <label for="q-${AK}-${idx}-${o.v}"><div class="rdot"></div><span>${o.l}</span><span style="margin-left:auto;font-size:11px;font-weight:700;color:#D1D5DB">${o.v}</span></label>
+        </div>`).join('')}
+    </div>`;
+  return d;
+}
+
+function recAns(i,v,tot){ANS[i]=v;updProg(ANS.filter(x=>x!==null).length,tot);}
+function updProg(done,tot){const p=Math.round(done/tot*100);document.getElementById('qprog-fill').style.width=p+'%';document.getElementById('q-lbl').textContent=`${done} / ${tot} terjawab`;document.getElementById('q-pct').textContent=p+'%';}
+function backConsent(){showStep('consent');}
+
+function submitQ(){
+  if(ANS.some(v=>v===null)){
+    document.getElementById('q-err').style.display='';
+    const ni=ANS.findIndex(v=>v===null);
+    document.getElementById(`q-${AK}-${ni}-0`)?.closest('div[style*="border-radius:16px"]')?.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  document.getElementById('q-err').style.display='none';
+  const sc=S[AK]; const res=sc.score(ANS); const rf=sc.rf.some(i=>ANS[i]>0);
+  LAST={key:AK,res,rf};
+  const top=res[0];
+  RIW.push({name:sc.name,cat:sc.cat,icon:sc.icon,lv:top.lv,cl:top.cl,date:new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short'})});
+  if(RIW.length>20)RIW.shift();
+  localStorage.setItem('sal_riw',JSON.stringify(RIW));
+  CNT=Math.min(CNT+1,6); localStorage.setItem('sal_cnt',CNT);
+  updateChips(); renderRiwayat();
+  renderResult(sc,res,rf); showStep('result');
+}
+
+// ── RENDER HASIL ──
+function renderResult(sc,res,rf){
+  document.getElementById('r-icon').textContent=sc.icon;
+  document.getElementById('r-icon').style.background=sc.ibg;
+  document.getElementById('r-name').textContent=sc.name+' — '+sc.cat;
+  document.getElementById('r-date').textContent=new Date().toLocaleDateString('id-ID',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('r-nama').textContent=localStorage.getItem('sal_nm')||'—';
+  document.getElementById('r-usia').textContent=(localStorage.getItem('sal_us')||'—')+(localStorage.getItem('sal_us')?'th':'');
+  document.getElementById('r-jk').textContent=localStorage.getItem('sal_jk')||'—';
+  const cards=document.getElementById('r-cards'); cards.innerHTML='';
+  res.forEach(r=>{
+    const c=CM[r.cl]||CM.g; const pct=Math.min(Math.round(r.sc/r.mx*100),100);
+    const id='bar-'+Math.random().toString(36).slice(2);
+    cards.insertAdjacentHTML('beforeend',`
+      <div style="background:#fff;border:1.5px solid #F3F4F6;border-radius:16px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.04)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:11px;font-weight:700;color:#6B7280">${r.lbl}</span>
+          <span style="font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;background:${c.bg};color:${c.tx}">${r.lv}</span>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:6px;margin-bottom:8px">
+          <span style="font-size:32px;font-weight:800;color:#111827;line-height:1">${r.sc}</span>
+          <span style="font-size:13px;color:#9CA3AF;padding-bottom:3px">/ ${r.mx}</span>
+          ${r.sub?`<span style="font-size:11px;color:#9CA3AF;padding-bottom:3px;margin-left:auto">${r.sub}</span>`:''}
+        </div>
+        <div style="width:100%;height:10px;background:#F3F4F6;border-radius:5px;overflow:hidden">
+          <div id="${id}" class="sbar-fill" style="width:0%;height:100%;background:${c.br};border-radius:5px" data-pct="${pct}"></div>
+        </div>
+        ${r.an?`<p style="margin:8px 0 0;font-size:11.5px;color:#374151;line-height:1.55">${r.an}</p>`:''}
+      </div>`);
+  });
+  setTimeout(()=>document.querySelectorAll('.sbar-fill').forEach(el=>el.style.width=el.dataset.pct+'%'),80);
+  document.getElementById('r-anjuran').textContent=res[0]?.an||'—';
+  document.getElementById('r-rf').style.display=rf?'':'none';
+}
+
+// ── RIWAYAT ──
+function renderRiwayat(){
+  const sec=document.getElementById('riwayat-sec'),lst=document.getElementById('riwayat-list');
+  if(!RIW.length){sec.style.display='none';return;}
+  sec.style.display='';
+  lst.innerHTML=RIW.slice().reverse().slice(0,5).map(r=>`
+    <div style="background:#fff;border:1.5px solid #F3F4F6;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+      <span style="font-size:20px">${r.icon}</span>
+      <div style="flex:1">
+        <p style="margin:0;font-size:13px;font-weight:700;color:#111827">${r.name}</p>
+        <p style="margin:1px 0 0;font-size:11px;color:#9CA3AF">${r.date}</p>
+      </div>
+      <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:${CM[r.cl]?.bg||CM.g.bg};color:${CM[r.cl]?.tx||CM.g.tx}">${r.lv}</span>
+    </div>`).join('');
+}
+function toggleRiwayat(){const s=document.getElementById('riwayat-sec');s.style.display=s.style.display==='none'?'':'none';}
+function clearRiwayat(){if(!confirm('Hapus semua riwayat?'))return;RIW=[];CNT=0;localStorage.removeItem('sal_riw');localStorage.removeItem('sal_cnt');updateChips();renderRiwayat();}
+
+// ── CETAK ──
+function doPrint(){document.querySelectorAll('.print-kop').forEach(e=>e.style.display='block');window.print();document.querySelectorAll('.print-kop').forEach(e=>e.style.display='none');}
+function printLast(){if(!LAST){alert('Belum ada hasil skrining.');return;}doPrint();}
+
+// ── LAIN ──
+function shareApp(){if(navigator.share)navigator.share({title:'Skrining Jiwa — Klinik Utama AMC',url:location.href});else{navigator.clipboard?.writeText(location.href);alert('Link disalin!');}}
+function resetPasien(){if(!confirm('Reset data pasien?'))return;['sal_nm','sal_us','sal_jk'].forEach(k=>localStorage.removeItem(k));updateChips();}
+function navClick(tab,el){document.querySelectorAll('.bnav-item').forEach(b=>b.classList.remove('active'));el.classList.add('active');if(tab==='edukasi'){rotateTip();document.getElementById('tip-title').parentElement.parentElement.scrollIntoView({behavior:'smooth'});}else if(tab!=='beranda')alert('Fitur '+tab+' akan segera hadir.');}
+</script>
+</body>
+</html>
